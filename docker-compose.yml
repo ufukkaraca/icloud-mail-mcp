@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  icloud-mail-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: icloud-mail-mcp-readonly:latest
+    container_name: icloud-mail-mcp-readonly
+    
+    # Keep stdin open for MCP stdio communication
+    stdin_open: true
+    tty: true
+    
+    # Environment variables (use .env file or pass directly)
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - ICLOUD_EMAIL=${ICLOUD_EMAIL}
+      - ICLOUD_APP_PASSWORD=${ICLOUD_APP_PASSWORD}
+    
+    # Mount logs directory
+    volumes:
+      - ./logs:/app/logs
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Resource limits (optional)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    
+    # Logging configuration
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('healthy')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s

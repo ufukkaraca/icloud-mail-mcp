@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: icloud-mail-mcp-readonly
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: pnpm install --frozen-lockfile && pnpm run build
+    startCommand: node dist/index.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ICLOUD_EMAIL
+        sync: false
+      - key: ICLOUD_APP_PASSWORD
+        sync: false
+    autoDeploy: false
