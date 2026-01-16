@@ -13,8 +13,8 @@ import { iCloudConfig } from './types/config.js';
 
 const server = new Server(
   {
-    name: 'icloud-mail-mcp',
-    version: '1.1.1',
+    name: 'icloud-mail-mcp-readonly',
+    version: '2.0.0',
   },
   {
     capabilities: {
@@ -33,14 +33,14 @@ async function initializeFromEnv() {
       appPassword: process.env.ICLOUD_APP_PASSWORD,
       imapHost: 'imap.mail.me.com',
       imapPort: 993,
-      smtpHost: 'smtp.mail.me.com',
-      smtpPort: 587,
+      smtpHost: 'smtp.mail.me.com', // Not used in read-only version
+      smtpPort: 587, // Not used in read-only version
     };
 
     try {
       mailClient = new iCloudMailClient(config);
       await mailClient.connect();
-      console.error(`Auto-configured iCloud Mail for ${config.email}`);
+      console.error(`Auto-configured iCloud Mail (READ-ONLY) for ${config.email}`);
     } catch (error) {
       console.error('Failed to auto-configure iCloud Mail:', error);
       mailClient = null;
@@ -56,7 +56,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'get_messages',
-        description: 'Get email messages from specified mailbox',
+        description: 'Get email messages from specified mailbox (READ-ONLY)',
         inputSchema: {
           type: 'object',
           properties: {
@@ -79,124 +79,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
-        name: 'send_email',
-        description: 'Send an email through iCloud Mail',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            to: {
-              oneOf: [
-                { type: 'string' },
-                { type: 'array', items: { type: 'string' } },
-              ],
-              description: 'Recipient email address(es)',
-            },
-            subject: {
-              type: 'string',
-              description: 'Email subject',
-            },
-            text: {
-              type: 'string',
-              description: 'Plain text email body',
-            },
-            html: {
-              type: 'string',
-              description: 'HTML email body',
-            },
-          },
-          required: ['to', 'subject'],
-        },
-      },
-      {
-        name: 'mark_as_read',
-        description: 'Mark email messages as read',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            messageIds: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Array of message IDs to mark as read',
-            },
-            mailbox: {
-              type: 'string',
-              description: 'Mailbox name (default: INBOX)',
-              default: 'INBOX',
-            },
-          },
-          required: ['messageIds'],
-        },
-      },
-      {
         name: 'get_mailboxes',
-        description: 'List all available mailboxes',
+        description: 'List all available mailboxes (READ-ONLY)',
         inputSchema: {
           type: 'object',
           properties: {},
-        },
-      },
-      {
-        name: 'test_connection',
-        description: 'Test the email server connection (IMAP and SMTP)',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-        },
-      },
-      {
-        name: 'create_mailbox',
-        description: 'Create a new mailbox (folder)',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            name: {
-              type: 'string',
-              description: 'Name of the mailbox to create',
-            },
-          },
-          required: ['name'],
-        },
-      },
-      {
-        name: 'delete_mailbox',
-        description: 'Delete an existing mailbox (folder)',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            name: {
-              type: 'string',
-              description: 'Name of the mailbox to delete',
-            },
-          },
-          required: ['name'],
-        },
-      },
-      {
-        name: 'move_messages',
-        description: 'Move messages between mailboxes',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            messageIds: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Array of message IDs to move',
-            },
-            sourceMailbox: {
-              type: 'string',
-              description: 'Source mailbox name',
-            },
-            destinationMailbox: {
-              type: 'string',
-              description: 'Destination mailbox name',
-            },
-          },
-          required: ['messageIds', 'sourceMailbox', 'destinationMailbox'],
         },
       },
       {
         name: 'search_messages',
-        description: 'Search for messages using various criteria',
+        description: 'Search for messages using various criteria (READ-ONLY)',
         inputSchema: {
           type: 'object',
           properties: {
@@ -236,60 +128,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
-        name: 'delete_messages',
-        description: 'Delete messages from a mailbox',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            messageIds: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Array of message IDs to delete',
-            },
-            mailbox: {
-              type: 'string',
-              description: 'Mailbox name (default: INBOX)',
-              default: 'INBOX',
-            },
-          },
-          required: ['messageIds'],
-        },
-      },
-      {
-        name: 'set_flags',
-        description: 'Set flags on messages (read, unread, flagged, etc.)',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            messageIds: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Array of message IDs to set flags on',
-            },
-            flags: {
-              type: 'array',
-              items: { type: 'string' },
-              description:
-                'Array of flags to set (e.g., ["\\Seen", "\\Flagged"])',
-            },
-            mailbox: {
-              type: 'string',
-              description: 'Mailbox name (default: INBOX)',
-              default: 'INBOX',
-            },
-            action: {
-              type: 'string',
-              enum: ['add', 'remove'],
-              description: 'Whether to add or remove the flags (default: add)',
-              default: 'add',
-            },
-          },
-          required: ['messageIds', 'flags'],
-        },
-      },
-      {
         name: 'download_attachment',
-        description: 'Download an attachment from a specific message',
+        description: 'Download an attachment from a specific message (READ-ONLY)',
         inputSchema: {
           type: 'object',
           properties: {
@@ -312,68 +152,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
-        name: 'auto_organize',
-        description:
-          'Automatically organize emails based on rules (sender, subject keywords, etc.)',
+        name: 'test_connection',
+        description: 'Test the IMAP server connection (READ-ONLY)',
         inputSchema: {
           type: 'object',
-          properties: {
-            rules: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name: {
-                    type: 'string',
-                    description: 'Rule name',
-                  },
-                  condition: {
-                    type: 'object',
-                    properties: {
-                      fromContains: {
-                        type: 'string',
-                        description: 'Move emails if sender contains this text',
-                      },
-                      subjectContains: {
-                        type: 'string',
-                        description:
-                          'Move emails if subject contains this text',
-                      },
-                    },
-                  },
-                  action: {
-                    type: 'object',
-                    properties: {
-                      moveToMailbox: {
-                        type: 'string',
-                        description: 'Mailbox to move matching emails to',
-                      },
-                    },
-                    required: ['moveToMailbox'],
-                  },
-                },
-                required: ['name', 'condition', 'action'],
-              },
-              description: 'Array of organization rules',
-            },
-            sourceMailbox: {
-              type: 'string',
-              description: 'Source mailbox to organize (default: INBOX)',
-              default: 'INBOX',
-            },
-            dryRun: {
-              type: 'boolean',
-              description:
-                'If true, only shows what would be organized without moving emails',
-              default: false,
-            },
-          },
-          required: ['rules'],
+          properties: {},
         },
       },
       {
         name: 'check_config',
-        description: 'Check if environment variables are properly configured',
+        description: 'Check if environment variables are properly configured (READ-ONLY)',
         inputSchema: {
           type: 'object',
           properties: {},
@@ -416,54 +204,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case 'send_email': {
-        if (!mailClient) {
-          throw new McpError(
-            ErrorCode.InvalidRequest,
-            'iCloud Mail not configured. Please set ICLOUD_EMAIL and ICLOUD_APP_PASSWORD environment variables.'
-          );
-        }
-
-        const result = await mailClient.sendEmail({
-          to: args?.to as string | string[],
-          subject: args?.subject as string,
-          text: args?.text as string,
-          html: args?.html as string,
-        });
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Email sent successfully. Message ID: ${result.messageId}`,
-            },
-          ],
-        };
-      }
-
-      case 'mark_as_read': {
-        if (!mailClient) {
-          throw new McpError(
-            ErrorCode.InvalidRequest,
-            'iCloud Mail not configured. Please set ICLOUD_EMAIL and ICLOUD_APP_PASSWORD environment variables.'
-          );
-        }
-
-        const messageIds = args?.messageIds as string[];
-        const mailbox = (args?.mailbox as string) || 'INBOX';
-
-        await mailClient.markAsRead(messageIds, mailbox);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Marked ${messageIds.length} messages as read`,
-            },
-          ],
-        };
-      }
-
       case 'get_mailboxes': {
         if (!mailClient) {
           throw new McpError(
@@ -479,104 +219,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: JSON.stringify(mailboxes, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'test_connection': {
-        if (!mailClient) {
-          throw new McpError(
-            ErrorCode.InvalidRequest,
-            'iCloud Mail not configured. Please set ICLOUD_EMAIL and ICLOUD_APP_PASSWORD environment variables.'
-          );
-        }
-
-        const result = await mailClient.testConnection();
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'create_mailbox': {
-        if (!mailClient) {
-          throw new McpError(
-            ErrorCode.InvalidRequest,
-            'iCloud Mail not configured. Please set ICLOUD_EMAIL and ICLOUD_APP_PASSWORD environment variables.'
-          );
-        }
-
-        const mailboxName = args?.name as string;
-        const result = await mailClient.createMailbox(mailboxName);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'delete_mailbox': {
-        if (!mailClient) {
-          throw new McpError(
-            ErrorCode.InvalidRequest,
-            'iCloud Mail not configured. Please set ICLOUD_EMAIL and ICLOUD_APP_PASSWORD environment variables.'
-          );
-        }
-
-        const mailboxName = args?.name as string;
-
-        if (!mailboxName) {
-          throw new McpError(
-            ErrorCode.InvalidParams,
-            'Mailbox name is required'
-          );
-        }
-
-        const result = await mailClient.deleteMailbox(mailboxName);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'move_messages': {
-        if (!mailClient) {
-          throw new McpError(
-            ErrorCode.InvalidRequest,
-            'iCloud Mail not configured. Please set ICLOUD_EMAIL and ICLOUD_APP_PASSWORD environment variables.'
-          );
-        }
-
-        const messageIds = args?.messageIds as string[];
-        const sourceMailbox = args?.sourceMailbox as string;
-        const destinationMailbox = args?.destinationMailbox as string;
-
-        const result = await mailClient.moveMessages(
-          messageIds,
-          sourceMailbox,
-          destinationMailbox
-        );
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
             },
           ],
         };
@@ -618,59 +260,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case 'delete_messages': {
-        if (!mailClient) {
-          throw new McpError(
-            ErrorCode.InvalidRequest,
-            'iCloud Mail not configured. Please set ICLOUD_EMAIL and ICLOUD_APP_PASSWORD environment variables.'
-          );
-        }
-
-        const messageIds = args?.messageIds as string[];
-        const mailbox = (args?.mailbox as string) || 'INBOX';
-
-        const result = await mailClient.deleteMessages(messageIds, mailbox);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
-      }
-
-      case 'set_flags': {
-        if (!mailClient) {
-          throw new McpError(
-            ErrorCode.InvalidRequest,
-            'iCloud Mail not configured. Please set ICLOUD_EMAIL and ICLOUD_APP_PASSWORD environment variables.'
-          );
-        }
-
-        const messageIds = args?.messageIds as string[];
-        const flags = args?.flags as string[];
-        const mailbox = (args?.mailbox as string) || 'INBOX';
-        const action = (args?.action as string) || 'add';
-
-        const result = await mailClient.setFlags(
-          messageIds,
-          flags,
-          mailbox,
-          action as 'add' | 'remove'
-        );
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
-      }
-
       case 'download_attachment': {
         if (!mailClient) {
           throw new McpError(
@@ -699,7 +288,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case 'auto_organize': {
+      case 'test_connection': {
         if (!mailClient) {
           throw new McpError(
             ErrorCode.InvalidRequest,
@@ -707,24 +296,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           );
         }
 
-        const rules = args?.rules as Array<{
-          name: string;
-          condition: {
-            fromContains?: string;
-            subjectContains?: string;
-          };
-          action: {
-            moveToMailbox: string;
-          };
-        }>;
-        const sourceMailbox = (args?.sourceMailbox as string) || 'INBOX';
-        const dryRun = (args?.dryRun as boolean) || false;
-
-        const result = await mailClient.autoOrganize(
-          rules,
-          sourceMailbox,
-          dryRun
-        );
+        const result = await mailClient.testConnection();
 
         return {
           content: [
@@ -744,6 +316,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
 
         const config = {
+          mode: 'READ-ONLY',
           email: {
             value: maskCredential(process.env.ICLOUD_EMAIL),
             configured: !!process.env.ICLOUD_EMAIL,
@@ -753,6 +326,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             configured: !!process.env.ICLOUD_APP_PASSWORD,
           },
           connectionStatus: mailClient ? 'Connected' : 'Not connected',
+          note: 'This is a read-only server. No write operations are available.',
         };
 
         return {
@@ -784,7 +358,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('iCloud Mail MCP Server running on stdio');
+  console.error('iCloud Mail MCP Server (READ-ONLY) running on stdio');
 }
 
 main().catch((error) => {

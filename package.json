@@ -1,7 +1,7 @@
 {
-  "name": "icloud-mail-mcp",
-  "version": "1.1.1",
-  "description": "Model Context Protocol server for iCloud Mail management and email operations",
+  "name": "icloud-mail-mcp-readonly",
+  "version": "2.0.0",
+  "description": "Read-only Model Context Protocol server for iCloud Mail - browse and search emails without modification capabilities",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -21,30 +21,31 @@
     "mcp",
     "icloud",
     "mail",
-    "email"
+    "email",
+    "read-only",
+    "readonly",
+    "viewer"
   ],
-  "author": "minagishl",
+  "author": "minagishl (read-only fork by ufukkaraca)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/minagishl/icloud-mail-mcp.git"
+    "url": "https://github.com/ufukkaraca/icloud-mail-mcp.git"
   },
-  "homepage": "https://github.com/minagishl/icloud-mail-mcp#readme",
+  "homepage": "https://github.com/ufukkaraca/icloud-mail-mcp#readme",
   "bugs": {
-    "url": "https://github.com/minagishl/icloud-mail-mcp/issues"
+    "url": "https://github.com/ufukkaraca/icloud-mail-mcp/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.2",
     "imap": "^0.8.19",
-    "mailparser": "^3.7.4",
-    "nodemailer": "^7.0.5"
+    "mailparser": "^3.7.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@types/imap": "^0.8.42",
     "@types/mailparser": "^3.4.6",
     "@types/node": "^24.2.1",
-    "@types/nodemailer": "^6.4.17",
     "@vitest/ui": "^3.2.4",
     "esbuild": "^0.25.8",
     "eslint": "^9.33.0",
