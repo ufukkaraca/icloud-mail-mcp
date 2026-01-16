@@ -6,6 +6,15 @@
 
 A Model Context Protocol (MCP) server for safely browsing and searching iCloud Mail without any risk of modifying, deleting, or sending emails. Perfect for AI assistants and automation tools where you want read-only email access.
 
+## 📚 Documentation
+
+- **[Quick Start Guide](QUICK-START.md)** - Get up and running in 5 minutes
+- **[Deployment Guide](DEPLOYMENT.md)** - Railway, Docker, and cloud deployment options
+- **[MCP Client Examples](MCP-CLIENT-EXAMPLES.md)** - Integration examples for various clients
+- **[Read-Only Notice](READ-ONLY-NOTICE.md)** - Important security information
+- **[Changelog](CHANGELOG.md)** - Version history and changes
+- **[Implementation Summary](IMPLEMENTATION-SUMMARY.md)** - Technical details
+
 ## 🔐 Security Features
 
 - ✅ **No Email Sending**: SMTP functionality completely removed
@@ -26,7 +35,57 @@ This read-only server allows you to:
 5. **Test Connection** - Verify IMAP connectivity
 6. **Check Configuration** - Verify environment setup
 
+## ⚡ Quick Start
+
+```bash
+# 1. Clone the repository
+git clone -b read-only-version https://github.com/ufukkaraca/icloud-mail-mcp.git
+cd icloud-mail-mcp
+
+# 2. Install dependencies
+pnpm install
+
+# 3. Build the project
+pnpm run build
+
+# 4. Test it out
+ICLOUD_EMAIL="your-email@icloud.com" \
+ICLOUD_APP_PASSWORD="xxxx-xxxx-xxxx-xxxx" \
+node dist/index.js
+```
+
+**Next:** Configure your MCP client - see [Quick Start Guide](QUICK-START.md)
+
+## 🐳 Docker Quick Start
+
+```bash
+# Build the Docker image
+docker build -t icloud-mail-mcp-readonly .
+
+# Run with Docker
+docker run -i --rm \
+  -e ICLOUD_EMAIL="your-email@icloud.com" \
+  -e ICLOUD_APP_PASSWORD="xxxx-xxxx-xxxx-xxxx" \
+  icloud-mail-mcp-readonly
+```
+
+**More:** See [Deployment Guide](DEPLOYMENT.md) for complete Docker instructions
+
 ## 📋 Available Tools
+
+| Tool | Description | Read-Only |
+|------|-------------|-----------|
+| `get_messages` | Retrieve email messages | ✅ |
+| `get_mailboxes` | List all folders | ✅ |
+| `search_messages` | Search with criteria | ✅ |
+| `download_attachment` | Download attachments | ✅ |
+| `test_connection` | Test IMAP connection | ✅ |
+| `check_config` | Verify configuration | ✅ |
+
+### Detailed Tool Documentation
+
+<details>
+<summary><strong>Click to expand full tool documentation</strong></summary>
 
 ### 1. `get_messages`
 Retrieve email messages from a specified mailbox.
@@ -131,58 +190,23 @@ Check if environment variables are properly configured.
 }
 ```
 
-## 🛠️ Installation
+</details>
+
+## 🛠️ Installation & Configuration
 
 ### Prerequisites
 
 1. **iCloud Account** with Mail enabled
-2. **App-Specific Password** for Mail access:
-   - Sign in to [appleid.apple.com](https://appleid.apple.com)
-   - Go to "Sign-In and Security" > "App-Specific Passwords"
-   - Generate a new password for "Mail"
-   - Save this password securely
+2. **App-Specific Password** - [Generate here](https://appleid.apple.com) (Sign-In and Security → App-Specific Passwords)
+3. **Node.js 18+** or Docker
 
-### Setup
+### Local Installation
 
-```bash
-# Clone this repository
-git clone -b read-only-version https://github.com/ufukkaraca/icloud-mail-mcp.git
-cd icloud-mail-mcp
+See [Quick Start Guide](QUICK-START.md) for detailed instructions.
 
-# Install dependencies using pnpm (or npm/yarn)
-pnpm install
-
-# Build the project
-pnpm run build
-```
-
-## ⚙️ Configuration
-
-Configure your MCP client (e.g., Claude Desktop, Cline, etc.) to use this server:
-
-### Environment Variables
-
-Add to your MCP server configuration:
-
-```json
-{
-  "icloud-mail-mcp-readonly": {
-    "command": "node",
-    "args": ["/path/to/icloud-mail-mcp/dist/index.js"],
-    "env": {
-      "ICLOUD_EMAIL": "your-email@icloud.com",
-      "ICLOUD_APP_PASSWORD": "xxxx-xxxx-xxxx-xxxx"
-    }
-  }
-}
-```
-
-### For Claude Desktop
-
-Edit your Claude Desktop config file:
+### Claude Desktop Configuration
 
 **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
@@ -192,49 +216,55 @@ Edit your Claude Desktop config file:
       "args": ["/absolute/path/to/icloud-mail-mcp/dist/index.js"],
       "env": {
         "ICLOUD_EMAIL": "your-email@icloud.com",
-        "ICLOUD_APP_PASSWORD": "your-app-specific-password"
+        "ICLOUD_APP_PASSWORD": "xxxx-xxxx-xxxx-xxxx"
       }
     }
   }
 }
 ```
 
+**More clients:** See [MCP Client Examples](MCP-CLIENT-EXAMPLES.md)
+
+## 🚢 Deployment Options
+
+| Platform | Status | Guide |
+|----------|--------|-------|
+| **Local** | ✅ Recommended | [Quick Start](QUICK-START.md) |
+| **Docker** | ✅ Recommended | [Deployment Guide](DEPLOYMENT.md#docker-deployment) |
+| **Railway** | ⚠️ Advanced | [Deployment Guide](DEPLOYMENT.md#railway-deployment) |
+| **Render** | ⚠️ Advanced | [Deployment Guide](DEPLOYMENT.md#render) |
+| **Heroku** | ⚠️ Advanced | [Deployment Guide](DEPLOYMENT.md#heroku) |
+| **Fly.io** | ⚠️ Advanced | [Deployment Guide](DEPLOYMENT.md#flyio) |
+
+> **Note:** MCP servers are designed for local stdio communication. Cloud deployment requires additional setup. See [Deployment Guide](DEPLOYMENT.md) for details.
+
 ## 🔒 Security Best Practices
 
 1. **Use App-Specific Passwords**: Never use your main iCloud password
 2. **Store Credentials Securely**: Use environment variables or secure vaults
-3. **Regular Password Rotation**: Periodically regenerate app-specific passwords
-4. **Monitor Access**: Review Apple ID security logs regularly
-5. **Limit Scope**: This server only has IMAP read access - no SMTP or write permissions
+3. **Enable 2FA**: Two-factor authentication on your Apple ID
+4. **Regular Rotation**: Periodically regenerate app-specific passwords
+5. **Monitor Access**: Review Apple ID security logs regularly
+
+**More:** See [Security Considerations](DEPLOYMENT.md#security-considerations) in Deployment Guide
 
 ## 📊 What's Different from the Original?
 
-This read-only fork has removed:
+### ❌ Removed (8 Write Tools)
+- `send_email`, `mark_as_read`, `create_mailbox`, `delete_mailbox`
+- `move_messages`, `delete_messages`, `set_flags`, `auto_organize`
 
-### ❌ Removed Tools (8)
-- `send_email` - Send emails via SMTP
-- `mark_as_read` - Mark messages as read
-- `create_mailbox` - Create new folders
-- `delete_mailbox` - Delete folders
-- `move_messages` - Move emails between folders
-- `delete_messages` - Delete emails
-- `set_flags` - Modify email flags
-- `auto_organize` - Auto-organize emails with rules
+### ✅ Kept (6 Read-Only Tools)
+- `get_messages`, `get_mailboxes`, `search_messages`
+- `download_attachment`, `test_connection`, `check_config`
 
-### ✅ Kept Tools (6)
-- `get_messages` - Read emails
-- `get_mailboxes` - List folders
-- `search_messages` - Search emails
-- `download_attachment` - Download attachments
-- `test_connection` - Test connectivity
-- `check_config` - Check configuration
+### 🔧 Technical Changes
+- Removed `nodemailer` (SMTP) dependency
+- All IMAP operations in read-only mode
+- ~600 lines of code removed
+- 40% smaller codebase
 
-### 🔧 Code Changes
-- Removed `nodemailer` dependency (SMTP library)
-- Removed all write operations from `iCloudMailClient` class
-- All IMAP operations use read-only mode (`openBox(mailbox, true)`)
-- Updated package name to `icloud-mail-mcp-readonly`
-- Version bumped to 2.0.0 to indicate major breaking changes
+**Details:** See [Changelog](CHANGELOG.md) and [Implementation Summary](IMPLEMENTATION-SUMMARY.md)
 
 ## 🧪 Development
 
@@ -248,38 +278,28 @@ pnpm run dev
 # Build the project
 pnpm run build
 
-# Type checking
-pnpm run typecheck
-
 # Run tests
 pnpm run test
 
-# Run linting
+# Type checking
+pnpm run typecheck
+
+# Linting
 pnpm run lint
 ```
 
 ## 🐛 Troubleshooting
 
-### Authentication Issues
+### Common Issues
 
-- ✅ Verify you're using an app-specific password (not your Apple ID password)
-- ✅ Ensure two-factor authentication is enabled on your Apple ID
-- ✅ Generate a new app-specific password if the current one fails
-- ✅ Check that your Apple ID hasn't been locked
+| Issue | Solution |
+|-------|----------|
+| Authentication failed | Use app-specific password, not Apple ID password |
+| Connection timeout | Check firewall, verify `imap.mail.me.com:993` access |
+| Module not found | Run `pnpm install` and `pnpm run build` |
+| MCP client can't connect | Use absolute paths, restart client |
 
-### Connection Problems
-
-- ✅ Verify internet connectivity
-- ✅ Check firewall allows connections to `imap.mail.me.com:993`
-- ✅ Try connecting from a different network
-- ✅ Ensure iCloud services are operational
-
-### No Messages Retrieved
-
-- ✅ Verify the mailbox name is correct (case-sensitive)
-- ✅ Check if the mailbox actually contains messages
-- ✅ Try increasing the `limit` parameter
-- ✅ Use `get_mailboxes` to see available mailbox names
+**More:** See [Troubleshooting Guide](DEPLOYMENT.md#troubleshooting) in Deployment Guide
 
 ## 📝 License
 
@@ -289,13 +309,17 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 This is a read-only fork of the excellent [iCloud Mail MCP Server](https://github.com/minagishl/icloud-mail-mcp) by [minagishl](https://github.com/minagishl).
 
-Original server features full read-write capabilities. This fork removes all write operations for security-conscious users who only need read access.
+- **Original Author**: [@minagishl](https://github.com/minagishl)
+- **Fork Maintainer**: [@ufukkaraca](https://github.com/ufukkaraca)
+- **Original Version**: 1.1.1 (full read-write)
+- **Fork Version**: 2.0.0 (read-only)
 
-## 📞 Support
+## 📞 Support & Resources
 
+- **Issues**: [GitHub Issues](https://github.com/ufukkaraca/icloud-mail-mcp/issues)
 - **Original Project**: [minagishl/icloud-mail-mcp](https://github.com/minagishl/icloud-mail-mcp)
-- **Read-Only Fork**: [ufukkaraca/icloud-mail-mcp](https://github.com/ufukkaraca/icloud-mail-mcp)
-- **Issues**: Please open an issue on the respective GitHub repository
+- **MCP Documentation**: [Model Context Protocol](https://modelcontextprotocol.io)
+- **Apple ID Security**: [appleid.apple.com](https://appleid.apple.com)
 
 ## ⚠️ Disclaimer
 
@@ -310,3 +334,5 @@ The maintainers are not responsible for any misuse or security issues arising fr
 ---
 
 **Made with 🔒 for secure, read-only email access**
+
+**Version**: 2.0.0 | **Updated**: January 16, 2026
