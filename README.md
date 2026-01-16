@@ -1,308 +1,116 @@
-# iCloud Mail MCP Server
+# iCloud Mail MCP Server (Read-Only Version)
 
-A Model Context Protocol (MCP) server for integrating with iCloud Mail using App Password authentication. This server provides tools to read, send, and manage emails through iCloud's IMAP and SMTP services.
+> 🔒 **This is a READ-ONLY fork** of the [original iCloud Mail MCP Server](https://github.com/minagishl/icloud-mail-mcp) by minagishl.
+> 
+> All write, modify, send, and delete operations have been removed for enhanced security. This version can only **read and search** emails.
 
-> Development logs for this project are being shared on [Hack Club's Summer of Making](https://summer.hackclub.com/projects/7559). Check it out to follow the development journey!
+A Model Context Protocol (MCP) server for safely browsing and searching iCloud Mail without any risk of modifying, deleting, or sending emails. Perfect for AI assistants and automation tools where you want read-only email access.
 
-## Features
+## 🔐 Security Features
 
-- **Secure Authentication**: Uses App-specific passwords for secure iCloud Mail access
-- **Email Management**: Read, send, and organize emails
-- **Mailbox Operations**: List mailboxes, mark messages as read
-- **Attachment Support**: Handle email attachments
-- **MCP Integration**: Seamless integration with MCP-compatible clients
+- ✅ **No Email Sending**: SMTP functionality completely removed
+- ✅ **No Email Modification**: Cannot mark as read/unread, flag, or change email properties
+- ✅ **No Email Deletion**: Cannot delete emails or move them to trash
+- ✅ **No Mailbox Management**: Cannot create or delete folders
+- ✅ **No Message Moving**: Cannot move emails between folders
+- ✅ **IMAP Read-Only**: All mailboxes are opened in read-only mode
 
-## Prerequisites
+## 🚀 What You CAN Do
 
-1. **iCloud Account**: You need an active iCloud account with Mail enabled
-2. **App Password**: Generate an app-specific password for Mail access:
-   - Sign in to [appleid.apple.com](https://appleid.apple.com)
-   - Go to "Sign-In and Security" > "App-Specific Passwords"
-   - Generate a new password for "Mail"
-   - Save this password securely
+This read-only server allows you to:
 
-## Installation
+1. **Browse Emails** - View email messages from any mailbox
+2. **Search Emails** - Search by sender, subject, date range, keywords
+3. **List Mailboxes** - View all available folders/mailboxes
+4. **Download Attachments** - Download email attachments (read-only)
+5. **Test Connection** - Verify IMAP connectivity
+6. **Check Configuration** - Verify environment setup
 
-```bash
-# Clone the repository
-git clone https://github.com/minagishl/icloud-mail-mcp.git
-cd icloud-mail-mcp
+## 📋 Available Tools
 
-# Install dependencies using pnpm
-pnpm install
-
-# Build the project
-pnpm run build
-```
-
-## Configuration
-
-The server requires environment variables to be set for authentication. Configuration is done through your MCP client settings:
-
-### Environment Variables (Required)
-
-Add to your MCP server configuration:
-
-```json
-{
-  "icloud-mail-mcp": {
-    "command": "node",
-    "args": ["/path/to/icloud-mail-mcp/dist/index.js"],
-    "env": {
-      "ICLOUD_EMAIL": "your-email@icloud.com",
-      "ICLOUD_APP_PASSWORD": "your-app-specific-password"
-    }
-  }
-}
-```
-
-## Available Tools
-
-<details>
-<summary><strong>Click to view all available tools</strong></summary>
-
-### Email Operations
-
-#### `get_messages`
-
+### 1. `get_messages`
 Retrieve email messages from a specified mailbox.
 
 **Parameters:**
-
 - `mailbox` (string, optional): Mailbox name (default: "INBOX")
-- `limit` (number, optional): Maximum number of messages to retrieve (default: 10)
+- `limit` (number, optional): Maximum messages to retrieve (default: 10)
 - `unreadOnly` (boolean, optional): Retrieve only unread messages (default: false)
 
-#### `send_email`
-
-Send an email through iCloud Mail.
-
-**Parameters:**
-
-- `to` (string or array, required): Recipient email address(es)
-- `subject` (string, required): Email subject
-- `text` (string, optional): Plain text email body
-- `html` (string, optional): HTML email body
-
-#### `mark_as_read`
-
-Mark email messages as read.
-
-**Parameters:**
-
-- `messageIds` (array, required): Array of message IDs to mark as read
-- `mailbox` (string, optional): Mailbox name (default: "INBOX")
-
-#### `move_messages`
-
-Move messages between mailboxes.
-
-**Parameters:**
-
-- `messageIds` (array, required): Array of message IDs to move
-- `sourceMailbox` (string, required): Source mailbox name
-- `destinationMailbox` (string, required): Destination mailbox name
-
-#### `search_messages`
-
-Search for messages using various criteria.
-
-**Parameters:**
-
-- `query` (string, optional): Search query text (searches in subject, from, body)
-- `mailbox` (string, optional): Mailbox name (default: "INBOX")
-- `limit` (number, optional): Maximum number of messages to retrieve (default: 10)
-- `dateFrom` (string, optional): Start date for search (YYYY-MM-DD format)
-- `dateTo` (string, optional): End date for search (YYYY-MM-DD format)
-- `fromEmail` (string, optional): Filter by sender email address
-- `unreadOnly` (boolean, optional): Search only unread messages (default: false)
-
-#### `delete_messages`
-
-Delete messages from a mailbox.
-
-**Parameters:**
-
-- `messageIds` (array, required): Array of message IDs to delete
-- `mailbox` (string, optional): Mailbox name (default: "INBOX")
-
-#### `set_flags`
-
-Set flags on messages (read, unread, flagged, etc.).
-
-**Parameters:**
-
-- `messageIds` (array, required): Array of message IDs to set flags on
-- `flags` (array, required): Array of flags to set (e.g., ["\\Seen", "\\Flagged"])
-- `mailbox` (string, optional): Mailbox name (default: "INBOX")
-- `action` (string, optional): Whether to "add" or "remove" the flags (default: "add")
-
-#### `download_attachment`
-
-Download an attachment from a specific message.
-
-**Parameters:**
-
-- `messageId` (string, required): Message ID containing the attachment
-- `attachmentIndex` (number, optional): Index of the attachment to download (0-based, default: 0)
-- `mailbox` (string, optional): Mailbox name (default: "INBOX")
-
-#### `auto_organize`
-
-Automatically organize emails based on rules (sender, subject keywords, etc.).
-
-**Parameters:**
-
-- `rules` (array, required): Array of organization rules with conditions and actions
-- `sourceMailbox` (string, optional): Source mailbox to organize (default: "INBOX")
-- `dryRun` (boolean, optional): If true, only shows what would be organized without moving emails (default: false)
-
-**Rule Structure:**
-
-```json
-{
-  "name": "Rule name",
-  "condition": {
-    "fromContains": "sender keyword",
-    "subjectContains": "subject keyword"
-  },
-  "action": {
-    "moveToMailbox": "destination folder"
-  }
-}
-```
-
-### Mailbox Management
-
-#### `get_mailboxes`
-
-List all available mailboxes in your iCloud Mail account.
-
-**Parameters:** None
-
-#### `create_mailbox`
-
-Create a new mailbox (folder) in your iCloud Mail account.
-
-**Parameters:**
-
-- `name` (string, required): Name of the mailbox to create
-
-#### `delete_mailbox`
-
-Delete an existing mailbox (folder) from your iCloud Mail account.
-
-**Parameters:**
-
-- `name` (string, required): Name of the mailbox to delete
-
-**Safety Features:**
-
-- Prevents deletion of system mailboxes (INBOX, Sent, Trash, Drafts, Junk)
-- Validates mailbox name input
-- Provides detailed error messages for common issues
-
-### System Tools
-
-#### `test_connection`
-
-Test the email server connection to verify IMAP and SMTP connectivity.
-
-**Parameters:** None
-
-#### `check_config`
-
-Check if environment variables are properly configured and show connection status.
-
-**Parameters:** None
-
-</details>
-
-## Usage Example
-
-<details>
-<summary><strong>Click to view usage examples</strong></summary>
-
-### Getting Started
-
-**Start the MCP server:**
-
-```bash
-# With environment variables (recommended)
-ICLOUD_EMAIL="your-email@icloud.com" ICLOUD_APP_PASSWORD="your-app-password" pnpm run start
-
-# Or start normally and configure manually
-pnpm run start
-```
-
-### Email Operations
-
-**Get recent messages:**
-
+**Example:**
 ```json
 {
   "tool": "get_messages",
   "arguments": {
-    "limit": 5,
+    "mailbox": "INBOX",
+    "limit": 20,
     "unreadOnly": true
   }
 }
 ```
 
-**Send an email:**
+### 2. `get_mailboxes`
+List all available mailboxes/folders in your iCloud Mail account.
 
+**Parameters:** None
+
+**Example:**
 ```json
 {
-  "tool": "send_email",
+  "tool": "get_mailboxes",
+  "arguments": {}
+}
+```
+
+### 3. `search_messages`
+Search for messages using various criteria.
+
+**Parameters:**
+- `query` (string, optional): Search text (searches subject, from, body)
+- `mailbox` (string, optional): Mailbox to search (default: "INBOX")
+- `limit` (number, optional): Maximum results (default: 10)
+- `dateFrom` (string, optional): Start date (YYYY-MM-DD format)
+- `dateTo` (string, optional): End date (YYYY-MM-DD format)
+- `fromEmail` (string, optional): Filter by sender email
+- `unreadOnly` (boolean, optional): Search only unread messages (default: false)
+
+**Example:**
+```json
+{
+  "tool": "search_messages",
   "arguments": {
-    "to": "recipient@example.com",
-    "subject": "Hello from MCP",
-    "text": "This email was sent using the iCloud Mail MCP server!"
+    "query": "meeting",
+    "fromEmail": "boss@company.com",
+    "dateFrom": "2026-01-01",
+    "limit": 50
   }
 }
 ```
 
-**Move messages between mailboxes:**
+### 4. `download_attachment`
+Download an attachment from a specific message.
 
+**Parameters:**
+- `messageId` (string, required): Message ID containing the attachment
+- `attachmentIndex` (number, optional): Index of attachment (0-based, default: 0)
+- `mailbox` (string, optional): Mailbox name (default: "INBOX")
+
+**Example:**
 ```json
 {
-  "tool": "move_messages",
+  "tool": "download_attachment",
   "arguments": {
-    "messageIds": ["message-id-1", "message-id-2"],
-    "sourceMailbox": "INBOX",
-    "destinationMailbox": "My Custom Folder"
+    "messageId": "<message-id@icloud.com>",
+    "attachmentIndex": 0
   }
 }
 ```
 
-### Mailbox Management
+### 5. `test_connection`
+Test the IMAP server connection.
 
-**Create a new mailbox:**
+**Parameters:** None
 
-```json
-{
-  "tool": "create_mailbox",
-  "arguments": {
-    "name": "My Custom Folder"
-  }
-}
-```
-
-**Delete a mailbox:**
-
-```json
-{
-  "tool": "delete_mailbox",
-  "arguments": {
-    "name": "My Custom Folder"
-  }
-}
-```
-
-### System Tools
-
-**Test connection:**
-
+**Example:**
 ```json
 {
   "tool": "test_connection",
@@ -310,8 +118,12 @@ pnpm run start
 }
 ```
 
-**Check configuration:**
+### 6. `check_config`
+Check if environment variables are properly configured.
 
+**Parameters:** None
+
+**Example:**
 ```json
 {
   "tool": "check_config",
@@ -319,16 +131,112 @@ pnpm run start
 }
 ```
 
-</details>
+## 🛠️ Installation
 
-## Security Notes
+### Prerequisites
 
-- **App Passwords**: Always use app-specific passwords, never your main iCloud password
-- **Secure Storage**: Store your app password securely and never commit it to version control
-- **Connection Security**: All connections use TLS/SSL encryption
-- **Minimal Permissions**: The server only accesses Mail functionality
+1. **iCloud Account** with Mail enabled
+2. **App-Specific Password** for Mail access:
+   - Sign in to [appleid.apple.com](https://appleid.apple.com)
+   - Go to "Sign-In and Security" > "App-Specific Passwords"
+   - Generate a new password for "Mail"
+   - Save this password securely
 
-## Development
+### Setup
+
+```bash
+# Clone this repository
+git clone -b read-only-version https://github.com/ufukkaraca/icloud-mail-mcp.git
+cd icloud-mail-mcp
+
+# Install dependencies using pnpm (or npm/yarn)
+pnpm install
+
+# Build the project
+pnpm run build
+```
+
+## ⚙️ Configuration
+
+Configure your MCP client (e.g., Claude Desktop, Cline, etc.) to use this server:
+
+### Environment Variables
+
+Add to your MCP server configuration:
+
+```json
+{
+  "icloud-mail-mcp-readonly": {
+    "command": "node",
+    "args": ["/path/to/icloud-mail-mcp/dist/index.js"],
+    "env": {
+      "ICLOUD_EMAIL": "your-email@icloud.com",
+      "ICLOUD_APP_PASSWORD": "xxxx-xxxx-xxxx-xxxx"
+    }
+  }
+}
+```
+
+### For Claude Desktop
+
+Edit your Claude Desktop config file:
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "icloud-mail-readonly": {
+      "command": "node",
+      "args": ["/absolute/path/to/icloud-mail-mcp/dist/index.js"],
+      "env": {
+        "ICLOUD_EMAIL": "your-email@icloud.com",
+        "ICLOUD_APP_PASSWORD": "your-app-specific-password"
+      }
+    }
+  }
+}
+```
+
+## 🔒 Security Best Practices
+
+1. **Use App-Specific Passwords**: Never use your main iCloud password
+2. **Store Credentials Securely**: Use environment variables or secure vaults
+3. **Regular Password Rotation**: Periodically regenerate app-specific passwords
+4. **Monitor Access**: Review Apple ID security logs regularly
+5. **Limit Scope**: This server only has IMAP read access - no SMTP or write permissions
+
+## 📊 What's Different from the Original?
+
+This read-only fork has removed:
+
+### ❌ Removed Tools (8)
+- `send_email` - Send emails via SMTP
+- `mark_as_read` - Mark messages as read
+- `create_mailbox` - Create new folders
+- `delete_mailbox` - Delete folders
+- `move_messages` - Move emails between folders
+- `delete_messages` - Delete emails
+- `set_flags` - Modify email flags
+- `auto_organize` - Auto-organize emails with rules
+
+### ✅ Kept Tools (6)
+- `get_messages` - Read emails
+- `get_mailboxes` - List folders
+- `search_messages` - Search emails
+- `download_attachment` - Download attachments
+- `test_connection` - Test connectivity
+- `check_config` - Check configuration
+
+### 🔧 Code Changes
+- Removed `nodemailer` dependency (SMTP library)
+- Removed all write operations from `iCloudMailClient` class
+- All IMAP operations use read-only mode (`openBox(mailbox, true)`)
+- Updated package name to `icloud-mail-mcp-readonly`
+- Version bumped to 2.0.0 to indicate major breaking changes
+
+## 🧪 Development
 
 ```bash
 # Install dependencies
@@ -350,87 +258,55 @@ pnpm run test
 pnpm run lint
 ```
 
-## Testing
-
-This project includes comprehensive test coverage using Vitest. The test suite covers:
-
-### Test Structure
-
-- **Total Tests**: 29 tests across 3 test files
-- **Framework**: Vitest with TypeScript support
-- **Coverage**: Core functionality, type definitions, and configuration
-
-### Test Categories
-
-#### 1. Core Client Tests (`src/lib/icloud-mail-client.test.ts`)
-
-- **Constructor validation**: Tests client creation with various configurations
-- **Email name extraction**: Tests handling of different email formats
-- **Basic functionality**: Tests core client behavior and configuration validation
-
-#### 2. Type Definition Tests (`src/types/config.test.ts`)
-
-- **iCloudConfig**: Tests configuration object structure
-- **EmailMessage**: Tests email message data types
-- **SendEmailOptions**: Tests email sending parameter validation
-- **SearchOptions**: Tests search parameter structures
-- **OrganizationRule**: Tests email organization rule definitions
-- **Attachment**: Tests attachment data structures
-
-#### 3. Server Configuration Tests (`src/index.test.ts`)
-
-- **Environment variables**: Tests handling of configuration environment variables
-- **Credential masking**: Tests security functions for hiding sensitive data
-- **Config validation**: Tests basic configuration validation logic
-
-### Running Tests
-
-```bash
-# Run all tests once
-pnpm run test:run
-
-# Run tests in watch mode (interactive)
-pnpm run test
-
-# Run tests with UI interface
-pnpm run test:ui
-```
-
-### Test Features
-
-- **Type Safety**: All tests are written in TypeScript without using `any`
-- **Mocking**: External dependencies (IMAP, SMTP) are properly mocked
-- **Coverage**: Tests cover both happy path and edge cases
-- **Isolation**: Each test is independent and properly cleaned up
-- **Real-world scenarios**: Tests reflect actual usage patterns
-
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### Authentication Issues
 
-- Verify your app password is correct and hasn't expired
-- Ensure two-factor authentication is enabled on your iCloud account
-- Check that Mail is enabled in your iCloud settings
+- ✅ Verify you're using an app-specific password (not your Apple ID password)
+- ✅ Ensure two-factor authentication is enabled on your Apple ID
+- ✅ Generate a new app-specific password if the current one fails
+- ✅ Check that your Apple ID hasn't been locked
 
 ### Connection Problems
 
-- Verify internet connectivity
-- Check if iCloud Mail servers are accessible
-- Ensure firewall settings allow connections to imap.mail.me.com and smtp.mail.me.com
+- ✅ Verify internet connectivity
+- ✅ Check firewall allows connections to `imap.mail.me.com:993`
+- ✅ Try connecting from a different network
+- ✅ Ensure iCloud services are operational
 
-### Email Not Sending
+### No Messages Retrieved
 
-- Verify SMTP settings and authentication
-- Check recipient email addresses are valid
-- Ensure you're not hitting rate limits
+- ✅ Verify the mailbox name is correct (case-sensitive)
+- ✅ Check if the mailbox actually contains messages
+- ✅ Try increasing the `limit` parameter
+- ✅ Use `get_mailboxes` to see available mailbox names
 
-## iCloud Mail Server Settings
+## 📝 License
 
-The server uses the following default settings for iCloud Mail:
+MIT License - see [LICENSE](LICENSE) file for details.
 
-- **IMAP Server**: imap.mail.me.com (Port: 993, SSL: Yes)
-- **SMTP Server**: smtp.mail.me.com (Port: 587, TLS: Yes)
+## 🙏 Credits
 
-## License
+This is a read-only fork of the excellent [iCloud Mail MCP Server](https://github.com/minagishl/icloud-mail-mcp) by [minagishl](https://github.com/minagishl).
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Original server features full read-write capabilities. This fork removes all write operations for security-conscious users who only need read access.
+
+## 📞 Support
+
+- **Original Project**: [minagishl/icloud-mail-mcp](https://github.com/minagishl/icloud-mail-mcp)
+- **Read-Only Fork**: [ufukkaraca/icloud-mail-mcp](https://github.com/ufukkaraca/icloud-mail-mcp)
+- **Issues**: Please open an issue on the respective GitHub repository
+
+## ⚠️ Disclaimer
+
+This server provides read-only access to your iCloud Mail. While it cannot modify your emails, always:
+- Use strong app-specific passwords
+- Monitor access logs
+- Revoke unused app-specific passwords
+- Keep your Apple ID secure with 2FA
+
+The maintainers are not responsible for any misuse or security issues arising from improper configuration.
+
+---
+
+**Made with 🔒 for secure, read-only email access**
