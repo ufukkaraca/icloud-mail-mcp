@@ -5,14 +5,11 @@ import {
   Attachment as MailparserAttachment,
   AddressObject as MailparserAddressObject,
 } from 'mailparser';
-import nodemailer from 'nodemailer';
 import {
   iCloudConfig,
   EmailMessage,
-  SendEmailOptions,
   Attachment,
   SearchOptions,
-  OrganizationRule,
 } from '../types/config.js';
 
 // Type definitions for IMAP
@@ -50,13 +47,13 @@ interface ImapMessageAttributes {
   size?: number;
 }
 
-// Remove unused ImapFetch interface
-
-// Use mailparser's AddressObject type instead
-
+/**
+ * READ-ONLY iCloud Mail Client
+ * This client only supports read operations via IMAP.
+ * No write, modify, or send operations are available.
+ */
 export class iCloudMailClient {
   private imap: Imap;
-  private transporter: nodemailer.Transporter;
   private config: iCloudConfig;
 
   constructor(config: iCloudConfig) {
@@ -78,20 +75,6 @@ export class iCloudMailClient {
       authTimeout: 30000, // 30 seconds timeout
       connTimeout: 30000,
     });
-
-    this.transporter = nodemailer.createTransport({
-      host: config.smtpHost || 'smtp.mail.me.com',
-      port: config.smtpPort || 587,
-      secure: false, // Use STARTTLS
-      requireTLS: true, // Force TLS
-      auth: {
-        user: config.email, // SMTP requires full email address
-        pass: config.appPassword,
-      },
-      tls: {
-        rejectUnauthorized: false, // Allow self-signed certificates if needed
-      },
-    });
   }
 
   private extractEmailName(email: string): string {
@@ -103,7 +86,7 @@ export class iCloudMailClient {
   async connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.imap.once('ready', () => {
-        console.error('IMAP connection ready');
+        console.error('IMAP connection ready (READ-ONLY mode)');
         resolve();
       });
 
@@ -134,7 +117,7 @@ export class iCloudMailClient {
 
           // Try connecting again with full email
           this.imap.once('ready', () => {
-            console.error('IMAP connection ready (with full email)');
+            console.error('IMAP connection ready (with full email, READ-ONLY mode)');
             resolve();
           });
 
@@ -167,25 +150,10 @@ export class iCloudMailClient {
       console.error('IMAP connection successful, disconnecting...');
       await this.disconnect();
 
-      console.error('Testing SMTP connection...');
-      // Test SMTP connection with timeout
-      await Promise.race([
-        this.transporter.verify(),
-        new Promise((_, reject) =>
-          setTimeout(
-            () =>
-              reject(new Error('SMTP verification timeout after 30 seconds')),
-            30000
-          )
-        ),
-      ]);
-
-      console.error('SMTP connection successful');
-
       return {
         status: 'success',
         message:
-          'Email connection test successful - both IMAP and SMTP are working',
+          'IMAP connection test successful (READ-ONLY mode - SMTP not available)',
       };
     } catch (error) {
       const errorMessage =
@@ -199,14 +167,14 @@ export class iCloudMailClient {
         errorMessage.includes('Invalid credentials')
       ) {
         helpfulMessage +=
-          "\n\nTroubleshooting:\n1. Ensure you're using an app-specific password, not your regular Apple ID password\n2. Verify that two-factor authentication is enabled on your Apple ID\n3. Generate a new app-specific password if the current one isn't working\n4. Check that your Apple ID hasn't been locked";
+          "\\n\\nTroubleshooting:\\n1. Ensure you're using an app-specific password, not your regular Apple ID password\\n2. Verify that two-factor authentication is enabled on your Apple ID\\n3. Generate a new app-specific password if the current one isn't working\\n4. Check that your Apple ID hasn't been locked";
       } else if (
         errorMessage.includes('timeout') ||
         errorMessage.includes('ENOTFOUND') ||
         errorMessage.includes('ECONNREFUSED')
       ) {
         helpfulMessage +=
-          '\n\nTroubleshooting:\n1. Check your internet connection\n2. Verify firewall settings allow connections to iCloud mail servers\n3. Try connecting from a different network';
+          '\\n\\nTroubleshooting:\\n1. Check your internet connection\\n2. Verify firewall settings allow connections to iCloud mail servers\\n3. Try connecting from a different network';
       }
 
       return {
@@ -346,192 +314,6 @@ export class iCloudMailClient {
 
           fetch.once('end', () => {
             resolve(messages);
-          });
-        });
-      });
-    });
-  }
-
-  async sendEmail(options: SendEmailOptions): Promise<{ messageId: string }> {
-    const mailOptions: nodemailer.SendMailOptions = {
-      from: this.config.email,
-      to: options.to,
-      subject: options.subject,
-    };
-
-    if (options.text) {
-      mailOptions.text = options.text;
-    }
-
-    if (options.html) {
-      mailOptions.html = options.html;
-    }
-
-    if (options.attachments) {
-      mailOptions.attachments = options.attachments.map((att) => ({
-        filename: att.filename,
-        path: att.path,
-        content: att.content,
-        contentType: att.contentType,
-      }));
-    }
-
-    const info = await this.transporter.sendMail(mailOptions);
-    return { messageId: info.messageId };
-  }
-
-  async markAsRead(
-    _messageIds: string[],
-    mailbox: string = 'INBOX'
-  ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.imap.openBox(mailbox, false, (err: Error) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        this.imap.search(['ALL'], (err: Error, results: number[]) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-
-          if (!results || results.length === 0) {
-            resolve();
-            return;
-          }
-
-          this.imap.addFlags(results, ['\\Seen'], (err: Error) => {
-            if (err) {
-              reject(err);
-              return;
-            }
-            resolve();
-          });
-        });
-      });
-    });
-  }
-
-  async createMailbox(
-    name: string
-  ): Promise<{ status: string; message: string }> {
-    return new Promise((resolve) => {
-      this.imap.addBox(name, (err: Error) => {
-        if (err) {
-          resolve({
-            status: 'error',
-            message: err.message,
-          });
-          return;
-        }
-
-        resolve({
-          status: 'success',
-          message: `Mailbox '${name}' created successfully`,
-        });
-      });
-    });
-  }
-
-  async deleteMailbox(
-    name: string
-  ): Promise<{ status: string; message: string }> {
-    if (!name || name.trim() === '') {
-      return {
-        status: 'error',
-        message: 'Mailbox name cannot be empty',
-      };
-    }
-
-    const trimmedName = name.trim();
-
-    // Prevent deletion of important system mailboxes
-    const systemMailboxes = ['INBOX', 'Sent', 'Trash', 'Drafts', 'Junk'];
-    if (systemMailboxes.includes(trimmedName)) {
-      return {
-        status: 'error',
-        message: `Cannot delete system mailbox '${trimmedName}'`,
-      };
-    }
-
-    return new Promise((resolve) => {
-      this.imap.delBox(trimmedName, (err: Error) => {
-        if (err) {
-          let errorMessage = err.message;
-
-          // Provide more helpful error messages for common issues
-          if (err.message.includes('does not exist')) {
-            errorMessage = `Mailbox '${trimmedName}' does not exist`;
-          } else if (err.message.includes('not empty')) {
-            errorMessage = `Cannot delete mailbox '${trimmedName}' because it contains messages. Please move or delete all messages first.`;
-          } else if (err.message.includes('permission')) {
-            errorMessage = `Permission denied: Cannot delete mailbox '${trimmedName}'`;
-          }
-
-          resolve({
-            status: 'error',
-            message: errorMessage,
-          });
-          return;
-        }
-
-        resolve({
-          status: 'success',
-          message: `Mailbox '${trimmedName}' deleted successfully`,
-        });
-      });
-    });
-  }
-
-  async moveMessages(
-    _messageIds: string[],
-    sourceMailbox: string,
-    destinationMailbox: string
-  ): Promise<{ status: string; message: string }> {
-    return new Promise((resolve) => {
-      this.imap.openBox(sourceMailbox, false, (err: Error) => {
-        if (err) {
-          resolve({
-            status: 'error',
-            message: `Failed to open source mailbox '${sourceMailbox}': ${err.message}`,
-          });
-          return;
-        }
-
-        // Search for all messages to get sequence numbers
-        this.imap.search(['ALL'], (err: Error, results: number[]) => {
-          if (err) {
-            resolve({
-              status: 'error',
-              message: `Failed to search messages: ${err.message}`,
-            });
-            return;
-          }
-
-          if (!results || results.length === 0) {
-            resolve({
-              status: 'error',
-              message: 'No messages found in source mailbox',
-            });
-            return;
-          }
-
-          // Use the sequence numbers for moving
-          this.imap.move(results, destinationMailbox, (err: Error) => {
-            if (err) {
-              resolve({
-                status: 'error',
-                message: `Failed to move messages: ${err.message}`,
-              });
-              return;
-            }
-
-            resolve({
-              status: 'success',
-              message: `Successfully moved ${results.length} messages from '${sourceMailbox}' to '${destinationMailbox}'`,
-            });
           });
         });
       });
@@ -693,120 +475,6 @@ export class iCloudMailClient {
     });
   }
 
-  async deleteMessages(
-    _messageIds: string[],
-    mailbox: string = 'INBOX'
-  ): Promise<{ status: string; message: string }> {
-    return new Promise((resolve) => {
-      this.imap.openBox(mailbox, false, (err: Error) => {
-        if (err) {
-          resolve({
-            status: 'error',
-            message: `Failed to open mailbox '${mailbox}': ${err.message}`,
-          });
-          return;
-        }
-
-        this.imap.search(['ALL'], (err: Error, results: number[]) => {
-          if (err) {
-            resolve({
-              status: 'error',
-              message: `Failed to search messages: ${err.message}`,
-            });
-            return;
-          }
-
-          if (!results || results.length === 0) {
-            resolve({
-              status: 'error',
-              message: 'No messages found in mailbox',
-            });
-            return;
-          }
-
-          this.imap.addFlags(results, ['\\Deleted'], (err: Error) => {
-            if (err) {
-              resolve({
-                status: 'error',
-                message: `Failed to mark messages for deletion: ${err.message}`,
-              });
-              return;
-            }
-
-            this.imap.expunge((err: Error) => {
-              if (err) {
-                resolve({
-                  status: 'error',
-                  message: `Failed to expunge deleted messages: ${err.message}`,
-                });
-                return;
-              }
-
-              resolve({
-                status: 'success',
-                message: `Successfully deleted ${results.length} messages from '${mailbox}'`,
-              });
-            });
-          });
-        });
-      });
-    });
-  }
-
-  async setFlags(
-    _messageIds: string[],
-    flags: string[],
-    mailbox: string = 'INBOX',
-    action: 'add' | 'remove' = 'add'
-  ): Promise<{ status: string; message: string }> {
-    return new Promise((resolve) => {
-      this.imap.openBox(mailbox, false, (err: Error) => {
-        if (err) {
-          resolve({
-            status: 'error',
-            message: `Failed to open mailbox '${mailbox}': ${err.message}`,
-          });
-          return;
-        }
-
-        this.imap.search(['ALL'], (err: Error, results: number[]) => {
-          if (err) {
-            resolve({
-              status: 'error',
-              message: `Failed to search messages: ${err.message}`,
-            });
-            return;
-          }
-
-          if (!results || results.length === 0) {
-            resolve({
-              status: 'error',
-              message: 'No messages found in mailbox',
-            });
-            return;
-          }
-
-          const flagOperation = action === 'add' ? 'addFlags' : 'delFlags';
-
-          this.imap[flagOperation](results, flags, (err: Error) => {
-            if (err) {
-              resolve({
-                status: 'error',
-                message: `Failed to ${action} flags: ${err.message}`,
-              });
-              return;
-            }
-
-            resolve({
-              status: 'success',
-              message: `Successfully ${action === 'add' ? 'added' : 'removed'} flags [${flags.join(', ')}] ${action === 'add' ? 'to' : 'from'} ${results.length} messages in '${mailbox}'`,
-            });
-          });
-        });
-      });
-    });
-  }
-
   async downloadAttachment(
     messageId: string,
     attachmentIndex: number = 0,
@@ -933,131 +601,5 @@ export class iCloudMailClient {
         });
       });
     });
-  }
-
-  async autoOrganize(
-    rules: OrganizationRule[],
-    sourceMailbox: string = 'INBOX',
-    dryRun: boolean = false
-  ): Promise<{
-    status: string;
-    message: string;
-    results: Array<{
-      rule: string;
-      matchedMessages: number;
-      moved: boolean;
-      messages?: Array<{
-        id: string;
-        from: string;
-        subject: string;
-        destinationMailbox: string;
-      }>;
-    }>;
-  }> {
-    try {
-      const messages = await this.getMessages(sourceMailbox, 100);
-      const results: Array<{
-        rule: string;
-        matchedMessages: number;
-        moved: boolean;
-        messages?: Array<{
-          id: string;
-          from: string;
-          subject: string;
-          destinationMailbox: string;
-        }>;
-      }> = [];
-
-      for (const rule of rules) {
-        const matchedMessages: Array<{
-          id: string;
-          from: string;
-          subject: string;
-          destinationMailbox: string;
-        }> = [];
-
-        for (const message of messages) {
-          let matches = false;
-
-          if (rule.condition.fromContains) {
-            matches =
-              matches ||
-              message.from
-                .toLowerCase()
-                .includes(rule.condition.fromContains.toLowerCase());
-          }
-
-          if (rule.condition.subjectContains) {
-            matches =
-              matches ||
-              message.subject
-                .toLowerCase()
-                .includes(rule.condition.subjectContains.toLowerCase());
-          }
-
-          if (matches) {
-            matchedMessages.push({
-              id: message.id,
-              from: message.from,
-              subject: message.subject,
-              destinationMailbox: rule.action.moveToMailbox,
-            });
-          }
-        }
-
-        if (matchedMessages.length > 0) {
-          let moved = false;
-
-          if (!dryRun) {
-            try {
-              const messageIds = matchedMessages.map((m) => m.id);
-              await this.moveMessages(
-                messageIds,
-                sourceMailbox,
-                rule.action.moveToMailbox
-              );
-              moved = true;
-            } catch (moveError) {
-              console.error(
-                `Failed to move messages for rule '${rule.name}':`,
-                moveError
-              );
-            }
-          }
-
-          results.push({
-            rule: rule.name,
-            matchedMessages: matchedMessages.length,
-            moved: !dryRun && moved,
-            messages: matchedMessages,
-          });
-        } else {
-          results.push({
-            rule: rule.name,
-            matchedMessages: 0,
-            moved: false,
-          });
-        }
-      }
-
-      const totalMatched = results.reduce(
-        (sum, result) => sum + result.matchedMessages,
-        0
-      );
-
-      return {
-        status: 'success',
-        message: dryRun
-          ? `Dry run completed. Found ${totalMatched} messages matching organization rules`
-          : `Organization completed. Processed ${totalMatched} messages`,
-        results,
-      };
-    } catch (error) {
-      return {
-        status: 'error',
-        message: `Failed to organize emails: ${error instanceof Error ? error.message : String(error)}`,
-        results: [],
-      };
-    }
   }
 }
